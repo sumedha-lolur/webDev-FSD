@@ -1,130 +1,249 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './SignUpPage.css';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const SignUpPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    password: '',
+    confirmPassword: '',
     phone: '',
-    age: '',
+    agreeToTerms: false
   });
 
   const [errors, setErrors] = useState({});
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value, type, checked } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ""
+      });
+    }
   };
 
-  const validate = () => {
-    let formErrors = {};
+  const validateForm = () => {
+    let tempErrors = {};
+    let isValid = true;
 
-    if (!formData.username.trim()) formErrors.username = 'Username is required';
-    if (!formData.password) formErrors.password = 'Password is required';
-    if (!formData.email) formErrors.email = 'Email is required';
-    if (!formData.phone) formErrors.phone = 'Phone number is required';
-    if (!formData.age) formErrors.age = 'Age is required';
-
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      formErrors.email = 'Email address is invalid';
+    if (!formData.firstName.trim()) {
+      tempErrors.firstName = "First name is required";
+      isValid = false;
     }
 
-    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
-      formErrors.phone = 'Phone number is invalid';
+    if (!formData.lastName.trim()) {
+      tempErrors.lastName = "Last name is required";
+      isValid = false;
     }
 
-    if (formData.age && (formData.age < 18 || formData.age > 100)) {
-      formErrors.age = 'Age must be between 18 and 100';
+    if (!formData.email) {
+      tempErrors.email = "Email is required";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      tempErrors.email = "Email is invalid";
+      isValid = false;
     }
 
-    return formErrors;
+    if (!formData.password) {
+      tempErrors.password = "Password is required";
+      isValid = false;
+    } else if (formData.password.length < 8) {
+      tempErrors.password = "Password must be at least 8 characters";
+      isValid = false;
+    }
+
+    if (!formData.confirmPassword) {
+      tempErrors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (formData.confirmPassword !== formData.password) {
+      tempErrors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      tempErrors.phone = "Phone number is invalid (10 digits required)";
+      isValid = false;
+    }
+
+    if (!formData.agreeToTerms) {
+      tempErrors.agreeToTerms = "You must agree to the terms and conditions";
+      isValid = false;
+    }
+
+    setErrors(tempErrors);
+    return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const formErrors = validate();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      setIsSubmitted(false);
-    } else {
-      setErrors({});
-      setIsSubmitted(true);
-      console.log('Form submitted:', formData);
-      // Here, you could send the form data to your backend or another service.
+    
+    if (validateForm()) {
+      setLoading(true);
+      
+      try {
+        // In a real application, you would send a request to your backend here
+        // For now, we'll simulate a successful registration
+        setTimeout(() => {
+          console.log("Registration successful");
+          // Redirect to dashboard
+          navigate("/dashboard");
+          setLoading(false);
+        }, 1500);
+      } catch (error) {
+        console.error("Registration error:", error);
+        setLoading(false);
+        setErrors({ general: "Registration failed. Please try again." });
+      }
     }
   };
 
   return (
-    <div className="sign-up-page">
-      <h2>Sign Up</h2>
-      {isSubmitted ? (
-        <div className="confirmation-message">
-          Thank you for signing up, {formData.username}! Your account has been successfully created.
+    <div className="signup-page">
+      <Navbar />
+      <div className="signup-container">
+        <div className="signup-form-container">
+          <h1>Create Your Account</h1>
+          <p className="signup-subtitle">Start your journey towards financial control</p>
+          
+          <form className="signup-form" onSubmit={handleSubmit}>
+            {errors.general && <div className="error-message general">{errors.general}</div>}
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="firstName">First Name</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={errors.firstName ? "input-error" : ""}
+                  placeholder="Enter your first name"
+                />
+                {errors.firstName && <div className="error-message">{errors.firstName}</div>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="lastName">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={errors.lastName ? "input-error" : ""}
+                  placeholder="Enter your last name"
+                />
+                {errors.lastName && <div className="error-message">{errors.lastName}</div>}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="email">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? "input-error" : ""}
+                placeholder="Enter your email"
+              />
+              {errors.email && <div className="error-message">{errors.email}</div>}
+            </div>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={errors.password ? "input-error" : ""}
+                  placeholder="Create a password"
+                />
+                {errors.password && <div className="error-message">{errors.password}</div>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="confirmPassword">Confirm Password</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={errors.confirmPassword ? "input-error" : ""}
+                  placeholder="Confirm your password"
+                />
+                {errors.confirmPassword && <div className="error-message">{errors.confirmPassword}</div>}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="phone">Phone Number (Optional)</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className={errors.phone ? "input-error" : ""}
+                placeholder="Enter your phone number"
+              />
+              {errors.phone && <div className="error-message">{errors.phone}</div>}
+            </div>
+            
+            <div className="form-group checkbox-group">
+              <input
+                type="checkbox"
+                id="agreeToTerms"
+                name="agreeToTerms"
+                checked={formData.agreeToTerms}
+                onChange={handleChange}
+              />
+              <label htmlFor="agreeToTerms">
+                I agree to the <Link to="/terms" className="terms-link">Terms and Conditions</Link> and <Link to="/privacy" className="terms-link">Privacy Policy</Link>
+              </label>
+              {errors.agreeToTerms && <div className="error-message">{errors.agreeToTerms}</div>}
+            </div>
+            
+            <button 
+              type="submit" 
+              className="signup-button"
+              disabled={loading}
+            >
+              {loading ? "Creating Account..." : "Sign Up"}
+            </button>
+          </form>
+          
+          <div className="signup-footer">
+            <p>Already have an account? <Link to="/login">Log In</Link></p>
+          </div>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="sign-up-form">
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-            />
-            {errors.username && <span className="error">{errors.username}</span>}
+        <div className="signup-image-container">
+          <div className="signup-overlay">
+            <h2>Your financial journey begins here</h2>
+            <p>Join thousands of users who have taken control of their finances with our comprehensive budget tracking tools.</p>
           </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-            {errors.password && <span className="error">{errors.password}</span>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            {errors.email && <span className="error">{errors.email}</span>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="phone">Phone Number</label>
-            <input
-              type="text"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-            />
-            {errors.phone && <span className="error">{errors.phone}</span>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="age">Age</label>
-            <input
-              type="number"
-              id="age"
-              name="age"
-              value={formData.age}
-              onChange={handleChange}
-            />
-            {errors.age && <span className="error">{errors.age}</span>}
-          </div>
-          <button type="submit" className="submit-button">Sign Up</button>
-        </form>
-      )}
+        </div>
+      </div>
+      <Footer />
     </div>
   );
 };
